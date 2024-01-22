@@ -46,15 +46,21 @@
             <button onclick="submitList()" class="btn btn-secondary">Add records to campaign</button>            
         </div>
         <br>
-        <div id="container" style="width:500px;overflow:auto;"></div>        
+        <div id="container" style="width:100%;overflow:auto;"></div>        
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
     </body>
     <script>       
 
+        var folderName = "TAM Reports"        
+        var reportName = "MASTER LIST REPORT"
+
         var listNumbers = [];
+        var reportHeaders = [];
         var addNumbers = [];
         var removeNumbers = [];
         var selectAll = true;
+        var companyLoc;
+        var numberLoc;
         mainArea = document.getElementById('info');
         var successLogin = false;
         var listIdentifier = document.getElementById("lists");
@@ -67,14 +73,15 @@
         recordsDeleted = 0;        
 
         function filter() {            
-            console.log(removeNumbers);
+            //console.log(removeNumbers);
             document.getElementById("container").innerHTML="";   
             var e = document.getElementById("company");
             var value = e.value;            
-            createTable(listNumbers, value);
+            createTable(listNumbers, value, reportHeaders, companyLoc);
         }
 
         async function app() {
+
             url = "https://api.five9.com:443/wsadmin/v13/AdminWebService";
 
             const username = document.getElementById("username").value;
@@ -89,37 +96,54 @@
                 successLogin = await userLogin(url, myHeaders, username);
             }
             if (successLogin === true) {
+                document.getElementById("loginSection").innerHTML = "Getting Records - Please Wait";
                 const lists = await getLists(url, myHeaders);
                 parseListsXML(lists);
-                const identifier = await runReport(url, myHeaders, re);
-                await isReportRunning(url, myHeaders, identifier, re);                
-                const report = await getReportResult(url, myHeaders, identifier);
-                listNumbers = parseNumbersXMLS(report);
+                var identifier = await runReport(url, myHeaders, re);
+                await isReportRunning(url, myHeaders, identifier, re);
+                var report = await getReportResult(url, myHeaders, identifier);
+                listNumbers, reportHeaders, companyLoc = parseNumbersXMLS(report);
+                //console.log(reportHeaders);
                 companyList(listNumbers);
-                createTable(listNumbers, company);
+                createTable(listNumbers, company, reportHeaders, companyLoc);
             }
         }        
+
+        async function main() {
+            url = "https://api.five9.com:443/wsadmin/v13/AdminWebService";
+
+            document.getElementById("loginSection").innerHTML = "Getting Records - Please Wait";          
+            
+            identifier = await runReport(url, myHeaders, re);
+            await isReportRunning(url, myHeaders, identifier, re);
+            report = await getReportResult(url, myHeaders, identifier);
+            listNumbers = []
+            reportHeaders = []
+            companyLoc = 0
+            listNumbers, reportHeaders, companyLoc = parseNumbersXMLS(report);
+                //console.log(reportHeaders);
+            filter()
+            }
 
         function addAll() {
             document.getElementById("btnContainer").onclick = function() {
                 var inputs = document.getElementsByTagName("input");      
-                var newNumber = "";      
+                var newNumber = "";
+                console.log(inputs.length)
                 for(var i = 3; i < inputs.length; i++) {
+                    console.log(inputs[i].value)
                     if(inputs[i].type == "checkbox") {
                         inputs[i].checked = true;
                     }                
                     //newNumber = inputs[i].value;
-                    if (addNumbers.includes(inputs[i].value)) {
-
-                    } else {
+                    if (!addNumbers.includes(inputs[i].value)) {
                         addNumbers.push(inputs[i].value);
-                        console.log(newNumber);
-                    }
                 }
                 console.log(addNumbers);
             }
             //console.log(addNumbers);
         } 
+    }
 
         async function userLogin(url, myHeaders, username) {
             var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:getUserGeneralInfo> <userName>${username}</userName> </ser:getUserGeneralInfo> </soapenv:Body> </soapenv:Envelope>`            
@@ -181,10 +205,7 @@
             }
             //console.log(listNames);
             listLocation = document.getElementById('listDropdown');
-            listLocation.removeAttribute("hidden");
-            document.getElementById("btnContainer").removeAttribute("hidden");
-            document.getElementById("compContainer").removeAttribute("hidden");
-            document.getElementById("submitRecords").removeAttribute("hidden");
+            //listLocation.removeAttribute("hidden");            
             var select = document.getElementById('lists');            
             for (i = 0; i < listNames.length; i++) {
                 var opt = listNames[i];
@@ -196,7 +217,7 @@
         }
 
         async function runReport(url, myHeaders, re) {
-            var raw = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">\r\n    <soapenv:Header/>\r\n    <soapenv:Body>\r\n        <ser:runReport>\r\n            <!--Optional:-->\r\n            <folderName>Shared Reports</folderName>\r\n            <!--Optional:-->\r\n            <reportName>List Details2</reportName>\r\n            <!--Optional:-->\r\n            <criteria>\r\n                <time>\r\n                    <!--Optional:-->\r\n                    <end>2026-12-31T23:00:00.000-07:00</end>\r\n                    <!--Optional:-->\r\n                    <start>2023-01-01T00:00:00.000-07:00</start>\r\n                </time>\r\n            </criteria>\r\n        </ser:runReport>\r\n    </soapenv:Body>\r\n</soapenv:Envelope>";
+            var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">\r\n    <soapenv:Header/>\r\n    <soapenv:Body>\r\n        <ser:runReport>\r\n            <!--Optional:-->\r\n            <folderName>${folderName}</folderName>\r\n            <!--Optional:-->\r\n            <reportName>${reportName}</reportName>\r\n            <!--Optional:-->\r\n            <criteria>\r\n                <time>\r\n                    <!--Optional:-->\r\n                    <end>2029-12-31T23:00:00.000-07:00</end>\r\n                    <!--Optional:-->\r\n                    <start>2021-01-01T00:00:00.000-07:00</start>\r\n                </time>\r\n            </criteria>\r\n        </ser:runReport>\r\n    </soapenv:Body>\r\n</soapenv:Envelope>`;
 
                 var requestOptions = {
                     method: 'POST',
@@ -273,19 +294,37 @@
         function parseNumbersXMLS(report) {            
             var json = xmlToJson.parse(report);
             //console.log(json);
-            //console.log(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][0]['values']['data'][0])
-            let i = 0;
-            while (i < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'].length) {
-                listNumbers.push([json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][0], json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][1], json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][2], json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][3], json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][4], json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][5]]);
-                i++;
+            //console.log(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][0]['values']['data'].length);
+            //console.log(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][0]);
+            let j = 0;
+            while (j < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'].length) {                
+                reportHeaders.push(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][j]);
+                if (json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][j] == 'company') {
+                    companyLoc = j
+                }
+                if (json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][j] == 'number1') {
+                    numberLoc = j
+                }
+                j++;
             }
-            return listNumbers;
+            let i = 0;            
+            while (i < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'].length) {
+                var record = [];
+                for (z = 0; z < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][0]['values']['data'].length; z++) {
+                    record.push(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][z])
+                }
+                listNumbers.push(record);
+                i++;
+            }            
+            //console.log(listNumbers);
+            return listNumbers, reportHeaders, companyLoc;
         }
 
-        function createTable(numbers, company) {
+        function createTable(numbers, company, reportHeaders, companyLoc) {
             console.log(removeNumbers);
             console.log("Creating new table");
-            var data = ['First Name', 'Last Name', 'Number', 'Company', 'Add to list'];
+            addNumbers = [];
+            var data = reportHeaders;
 
             tablearea = document.getElementById('container');
             table = document.createElement('table');  
@@ -301,58 +340,57 @@
                 tr.appendChild(th);
                 thead.appendChild(tr);
             }
+            headerTxt = document.createTextNode('Add to list');
+            th = document.createElement('th');
+            th.appendChild(headerTxt);
+            tr.appendChild(th);
+            thead.appendChild(tr);
 
             table.appendChild(thead);
                         
             for (var i = 0; i < numbers.length; i++) {
                 //console.log(numbers[i][2])
-                if (company == "all") {
-                    if (typeof numbers[i][2] == "object") {
-                        phoneNumber = numbers[i][4]
-                    } else {
-                        phoneNumber = numbers[i][2]
-                    }
+                phoneNumber = numbers[i][numberLoc]
+                if (company == "all") {                    
                     //console.log(typeof numbers[i][2])
-                    tr = document.createElement('tr');
-                    tr.appendChild(document.createElement('td'));
-                    tr.appendChild(document.createElement('td'));
-                    tr.appendChild(document.createElement('td'));
-                    tr.appendChild(document.createElement('td'));
-                    tr.appendChild(document.createElement('td'));
+                    let tr = document.createElement('tr');
+                    
+                    for (let z = 0; z < numbers[i].length; z++) {
+                        tr.appendChild(document.createElement('td'));
+                    };
 
                     var callCheckbox = document.createElement("INPUT");
                     callCheckbox.type = "checkbox";
                     callCheckbox.setAttribute('id', 'row' + i);
                     callCheckbox.setAttribute('value', phoneNumber);
                     callCheckbox.setAttribute('onclick', 'addToListBulk(this)');
+                    
+                    var colCount = 0;
+                    for (let z = 0; z < numbers[i].length; z++) {
+                        if (typeof numbers[i][z] == "object") {
+                            tr.cells[z].appendChild(document.createTextNode(""));    
+                        } else {
+                            tr.cells[z].appendChild(document.createTextNode(numbers[i][z]));                        
+                        };
+                        colCount++;
+                    };
 
-                    tr.cells[0].appendChild(document.createTextNode(numbers[i][0]));
-                    tr.cells[1].appendChild(document.createTextNode(numbers[i][1]));
-                    tr.cells[2].appendChild(document.createTextNode(phoneNumber));
-                    tr.cells[3].appendChild(document.createTextNode(numbers[i][5]))
-                    tr.cells[4].appendChild(callCheckbox);
+                    var newCell = tr.insertCell(colCount);
+                    newCell.appendChild(callCheckbox);
 
                     table.appendChild(tr);
                 } else {
-                    if (numbers[i][5] == company) {
-                        console.log(numbers[i][2]);
-                        if (typeof numbers[i][2] == "object") {
-                        phoneNumber = numbers[i][4]
-                        } else {
-                            phoneNumber = numbers[i][2]
-                        }
-                        console.log("Does list contain " + phoneNumber + " " + numbers[i].includes(phoneNumber));
-                        console.log("Does list contain " + phoneNumber + " " + listNumbers[i].includes(phoneNumber));
-                        console.log("Does list contain " + phoneNumber + " " + removeNumbers.includes(String(phoneNumber)));
+                    if (numbers[i][companyLoc] == company) {
+                        //console.log("Does list contain " + phoneNumber + " " + numbers[i].includes(phoneNumber));
+                        //console.log("Does list contain " + phoneNumber + " " + listNumbers[i].includes(phoneNumber));
+                        //console.log("Does list contain " + phoneNumber + " " + removeNumbers.includes(String(phoneNumber)));
                         //console.log(typeof(phoneNumber));
                         if (!removeNumbers.includes(String(phoneNumber))) {
                             //console.log(typeof numbers[i][2])
                             tr = document.createElement('tr');
-                            tr.appendChild(document.createElement('td'));
-                            tr.appendChild(document.createElement('td'));
-                            tr.appendChild(document.createElement('td'));
-                            tr.appendChild(document.createElement('td'));
-                            tr.appendChild(document.createElement('td'));
+                            for (let z = 0; z < numbers[i].length; z++) {
+                                tr.appendChild(document.createElement('td'));
+                            };
 
                             var callCheckbox = document.createElement("INPUT");
                             callCheckbox.type = "checkbox";
@@ -363,11 +401,18 @@
                                 callCheckbox.setAttribute("checked", true);
                             };
 
-                            tr.cells[0].appendChild(document.createTextNode(numbers[i][0]));
-                            tr.cells[1].appendChild(document.createTextNode(numbers[i][1]));
-                            tr.cells[2].appendChild(document.createTextNode(phoneNumber));
-                            tr.cells[3].appendChild(document.createTextNode(numbers[i][5]))
-                            tr.cells[4].appendChild(callCheckbox);
+                            var colCount = 0;
+                            for (let z = 0; z < numbers[i].length; z++) {
+                                if (typeof numbers[i][z] == "object") {
+                                    tr.cells[z].appendChild(document.createTextNode(""));    
+                                } else {
+                                    tr.cells[z].appendChild(document.createTextNode(numbers[i][z]));                        
+                                };                       
+                                colCount++;
+                            };
+
+                            var newCell = tr.insertCell(colCount);
+                            newCell.appendChild(callCheckbox);
 
                             table.appendChild(tr);
                         }
@@ -375,7 +420,13 @@
                 }
             }
             
-            tablearea.appendChild(table);            
+            tablearea.appendChild(table); 
+            
+            document.getElementById("listDropdown").removeAttribute("hidden");
+            document.getElementById("btnContainer").removeAttribute("hidden");
+            document.getElementById("compContainer").removeAttribute("hidden");
+            document.getElementById("submitRecords").removeAttribute("hidden");
+            document.getElementById("loginSection").innerHTML = "";
     }
 
     function companyList(numbers) {        
@@ -386,20 +437,21 @@
             el.value = "all";
             select.appendChild(el);
             for (i = 0; i < numbers.length; i++) {
-                if (!companyNames.includes(numbers[i][5])) {
-                    var opt = numbers[i][5];
+                console.log(numbers[i][companyLoc]);
+                if (!companyNames.includes(numbers[i][companyLoc])) {
+                    var opt = numbers[i][companyLoc];
                     el = document.createElement('option');
                     el.textContent = opt;
                     el.value = opt;
                     select.appendChild(el);
-                    companyNames.push(numbers[i][5]);
+                    companyNames.push(numbers[i][companyLoc]);
                 }
             } 
     }
 
     function addToListBulk(number) {
         if (document.getElementById(number.id).checked) {
-            addNumbers.push(number.value)
+            addNumbers.push(number.value + "\n");
         } else {
             var index = addNumbers.indexOf(number.value);
             if (index > -1) {
@@ -411,11 +463,11 @@
 
     function submitList() { 
         if (addNumbers.length > 0) {
-            console.log(listIdentifier.value);
+            //console.log(listIdentifier.value);
             var text = listIdentifier.options[listIdentifier.selectedIndex].text;
             const response = confirm(`Are you sure you want to add ${addNumbers.length} numbers to ${text}?`);    
             if (response === true) {
-                submitRecord(0);        
+                submitRecord2(0);        
             }
         }
     }
@@ -424,12 +476,12 @@
 
     function addToList(number) {
         var text = listIdentifier.options[listIdentifier.selectedIndex].text;
-        console.log(listIdentifier.value);
+        //console.log(listIdentifier.value);
         const response = confirm(`Are you sure you want to add ${number} to ${text}?`);    
         if (response === true) {
-            submitRecord(number);        
+            submitRecord2(number);        
         }
-    }
+    };
 
 
     async function submitRecord(number) {
@@ -437,7 +489,7 @@
             document.getElementById("btnContainer").setAttribute("hidden", true);
             document.getElementById("compContainer").setAttribute("hidden", true);
             document.getElementById("submitRecords").setAttribute("hidden", true);
-            document.getElementById("loginSection").innerHTML = "MOVING RECORDS";
+            document.getElementById("loginSection").innerHTML = "MOVING RECORDS - Please Wait";
         if (addNumbers.length > 0) {
             for (var i = 0; i < addNumbers.length; i++) {
                 var text = listIdentifier.options[listIdentifier.selectedIndex].text;
@@ -451,7 +503,7 @@
                 .then(response => response.text())                
                 .catch(error => console.log('error', error));
 
-                await deleteRecord(addNumbers[i]);
+                await deleteRecord2(addNumbers[i]);
                 removeNumbers.push(addNumbers[i]);
             }
         }
@@ -461,15 +513,29 @@
         document.getElementById("submitRecords").removeAttribute("hidden");
         document.getElementById("loginSection").innerHTML = "";
         filter();
-    }
+    };
 
-    async function deleteRecord(number) {          
-        console.log("Deleting: " + number);
-        recordsDeleted += 1;
+    async function submitRecord2(number) {
+        document.getElementById('listDropdown').setAttribute("hidden", true);
+        document.getElementById("btnContainer").setAttribute("hidden", true);
+        document.getElementById("compContainer").setAttribute("hidden", true);
+        document.getElementById("submitRecords").setAttribute("hidden", true);
+        document.getElementById("myTable").setAttribute("hidden", true);
+        document.getElementById("loginSection").innerHTML = "MOVING RECORDS - Please Wait";
+
+        var listName = listIdentifier.options[listIdentifier.selectedIndex].text;
+        var updateList = "";
+
+        for (i = 0; i < addNumbers.length; i++) {
+            updateList = updateList + addNumbers[i] + "\n"
+        }
+
+        console.log(updateList);
+
         myHeaders2 = new Headers();
         myHeaders2.append("Content-Type", "application/xml");
         myHeaders2.append("Authorization", `Basic ${encodedString}`)
-        var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">   <soapenv:Header/>   <soapenv:Body>      <ser:deleteFromList>                  <listName>Test</listName>                  <listDeleteSettings>            <allowDataCleanup>true</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>                              <fieldName>number1</fieldName>               <key>true</key>            </fieldsMapping>            <listDeleteMode>DELETE_ALL</listDeleteMode>         </listDeleteSettings>         <importData>                     <values>                              <item>${number}</item>            </values>         </importData>      </ser:deleteFromList>   </soapenv:Body></soapenv:Envelope>`
+        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:addToListCsv> <listName>${listName}</listName> <listUpdateSettings> <allowDataCleanup>False</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>               <fieldName>number1</fieldName>               <key>1</key>            </fieldsMapping>            <separator>,</separator>            <skipHeaderLine>False</skipHeaderLine>            <cleanListBeforeUpdate>False</cleanListBeforeUpdate>            <crmAddMode>ADD_NEW</crmAddMode>            <crmUpdateMode>UPDATE_SOLE_MATCHES</crmUpdateMode>            <listAddMode>ADD_ALL</listAddMode>         </listUpdateSettings>         <csvData>${updateList}</csvData>      </ser:addToListCsv>   </soapenv:Body></soapenv:Envelope>`
         var requestOptions = {
             method: 'POST',
             headers: myHeaders2,
@@ -486,56 +552,119 @@
             throw new Error(message);
             document.getElementById("loginSection").innerHTML = "ERROR! Please see logs!";
         } else {
+            identifier = await response.text();
+            identifier = xmlToJson.parse(identifier);
+            identifier = identifier['env:Envelope']['env:Body']['ns2:addToListCsvResponse']['return']['identifier'];
+            console.log(identifier);
+            await isImportRunning(url, myHeaders, identifier, re);
+            await deleteRecord2(updateList)            
+        };
+
+        document.getElementById('listDropdown').removeAttribute("hidden");
+        document.getElementById("btnContainer").removeAttribute("hidden");
+        document.getElementById("compContainer").removeAttribute("hidden");
+        document.getElementById("submitRecords").removeAttribute("hidden");
+        document.getElementById("myTable").removeAttribute("hidden");
+        document.getElementById("loginSection").innerHTML = "";
+        updateList = "";
+        addNumbers =[];
+
+        main();
+    };
+
+    async function deleteRecord(number) {          
+        console.log("Deleting: " + number);
+        recordsDeleted += 1;
+        myHeaders2 = new Headers();
+        myHeaders2.append("Content-Type", "application/xml");
+        myHeaders2.append("Authorization", `Basic ${encodedString}`)
+        var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">   <soapenv:Header/>   <soapenv:Body>      <ser:deleteFromList>                  <listName>Test</listName>                  <listDeleteSettings>            <allowDataCleanup>true</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>                              <fieldName>number1</fieldName>               <key>true</key>            </fieldsMapping>            <listDeleteMode>DELETE_ALL</listDeleteMode>         </listDeleteSettings>         <importData>                     <values>                              <item>${number}</item>            </values>         </importData>      </ser:deleteFromList>   </soapenv:Body></soapenv:Envelope>`
+        var requestOptions = {
+            method: 'POST',
+            headers: myHeaders2,
+            body: raw,
+            redirect: 'follow'
+        }        
+        console.log(requestOptions);
+        console.log(raw);
+        const response = await fetch(url, requestOptions);
+
+        if (!response.ok) {
+            const message = `An error has occured: ${response.status}`;
+
+            throw new Error(message);
+            document.getElementById("loginSection").innerHTML = "ERROR! Please see logs!";
+        } else {
             listNumbers.pop(addNumbers[i]);            
         }
-        if (recordsDeleted == 20) {
-            console.log("Pausing for 60 seconds");
-            await sleep(60000);
+        if (recordsDeleted > 0) {
+            console.log("Pausing while records delete");
+            await sleep(recordsDeleted * 1000);
             recordsDeleted = 0;
         }
-    }
-        
-    
-    async function submitRecord2(number) {
-        console.log(addNumbers.length);
+    };
 
-        if (addNumbers.length > 0) {                
-            for (var i = 0; i < addNumbers.length; i++) {
-                var text = listIdentifier.options[listIdentifier.selectedIndex].text;
-                tablearea.innerHTML = "";        
-                var requestOptions = {
-                    method: 'POST'                
-                };
-                
-                console.log('Sending number: ' + number)
-                fetch(`https://api.five9.com/web2campaign/AddToList?F9domain=Five9 TAM DEMO - Daniel Garcia&F9key=number1&number1=${addNumbers[i]}&F9list=${text}`, requestOptions)
-                .then(response => response.text())
-                .then(result => console.log(result))
-                .catch(error => console.log('error', error));
-                
-                var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">   <soapenv:Header/>   <soapenv:Body>      <ser:deleteFromList>                  <listName>Test</listName>                  <listDeleteSettings>            <allowDataCleanup>true</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>                              <fieldName>number1</fieldName>               <key>true</key>            </fieldsMapping>            <listDeleteMode>DELETE_ALL</listDeleteMode>         </listDeleteSettings>         <importData>                     <values>                              <item>${addNumbers[i]}</item>            </values>         </importData>      </ser:deleteFromList>   </soapenv:Body></soapenv:Envelope>`
-                var requestOptions = {
+    async function deleteRecord2(numbersToDelete) {
+        var listName = listIdentifier.options[listIdentifier.selectedIndex].text;        
+
+        //console.log(numbersToDelete);
+
+        myHeaders2 = new Headers();
+        myHeaders2.append("Content-Type", "application/xml");
+        myHeaders2.append("Authorization", `Basic ${encodedString}`)
+        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:deleteFromListCsv> <listName>Test</listName> <listDeleteSettings> <allowDataCleanup>False</allowDataCleanup> <fieldsMapping> <columnNumber>1</columnNumber> <fieldName>number1</fieldName> <key>1</key> </fieldsMapping> <separator>,</separator> <skipHeaderLine>False</skipHeaderLine> <listDeleteMode>DELETE_IF_SOLE_CRM_MATCH</listDeleteMode> </listDeleteSettings> <csvData>${numbersToDelete}</csvData> </ser:deleteFromListCsv> </soapenv:Body> </soapenv:Envelope>`
+        var requestOptions = {
+            method: 'POST',
+            headers: myHeaders2,
+            body: raw,
+            redirect: 'follow'
+        }        
+        //console.log(requestOptions);
+        //console.log(raw);
+        const response = await fetch(url, requestOptions);
+
+        if (!response.ok) {
+            const message = `An error has occured: ${response.status}`;
+
+            throw new Error(message);
+            document.getElementById("loginSection").innerHTML = "ERROR! Please see logs!";
+        } else {
+            identifier = await response.text();
+            identifier = xmlToJson.parse(identifier);
+            identifier = identifier['env:Envelope']['env:Body']['ns2:deleteFromListCsvResponse']['return']['identifier'];
+            console.log(identifier);
+            await isImportRunning(url, myHeaders, identifier, re);
+        };
+    };
+
+    async function isImportRunning(url, myHeaders, identifierString, re) {
+            var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:isImportRunning> <identifier> <identifier>${identifierString}</identifier> </identifier> </ser:isImportRunning> </soapenv:Body> </soapenv:Envelope>`
+
+            var requestOptions = {
                     method: 'POST',
                     headers: myHeaders,
                     body: raw,
-                    redirecto: 'follow'
-            }
-            //console.log(raw);
-            const response = await fetch(url, requestOptions);
+                    redirect: 'follow'
+                }; 
 
-            console.log(response);
-            if (!response.ok) {
-                const message = `An error has occured: ${response.status}`;
-                throw new Error(message);
-                } else {
-                    listNumbers.pop(addNumbers[i]);
-                    removeNumbers.push(addNumbers[i]);
-                    console.log("Does list contain " + addNumbers[i] + " " + listNumbers.includes(addNumbers[i]));
-                }        
-        }};
-        await sleep(2000)
-        //app();            
-        filter();
-    }
+            try {
+                const response = await fetch(url, requestOptions);
+
+                if (!response.ok) {
+                    throw new Error (`HTTP error! status: ${response.status}`);
+                }
+                const running = await response.text();
+                var isRunning = running.match(re);                
+                if (isRunning[1] == "true") {
+                    await sleep(5000)
+                    isImportRunning(url, myHeaders, identifierString, re);
+                }
+                if (isRunning[1] == "false") {
+                    return "done";
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
     </script>
 </html>
