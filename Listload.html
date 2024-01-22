@@ -24,7 +24,8 @@
                 <input type="text" id="username" name="username" value ="" class="form-control">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" value="" class="form-control">
-                <input type="button" class="btn btn-primary" value="Login" onclick="app()">
+                <input type="button" id="loginBtn" class="btn btn-primary" value="Login" onclick="app()">
+                <input type="button" id="logoutBtn" class="btn btn-danger" value="Logout" onclick="location.reload();" hidden>
             </form>
         </div>
         <div id="loginSection"></div>
@@ -96,6 +97,8 @@
                 successLogin = await userLogin(url, myHeaders, username);
             }
             if (successLogin === true) {
+                document.getElementById("loginBtn").setAttribute('hidden', true);
+                document.getElementById("logoutBtn").removeAttribute('hidden');
                 document.getElementById("loginSection").innerHTML = "Getting Records - Please Wait";
                 const lists = await getLists(url, myHeaders);
                 parseListsXML(lists);
@@ -437,7 +440,6 @@
             el.value = "all";
             select.appendChild(el);
             for (i = 0; i < numbers.length; i++) {
-                console.log(numbers[i][companyLoc]);
                 if (!companyNames.includes(numbers[i][companyLoc])) {
                     var opt = numbers[i][companyLoc];
                     el = document.createElement('option');
