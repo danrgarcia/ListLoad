@@ -3,16 +3,7 @@ Application for moving records between lists in Five9
 
 Requirements to work correctly:
 
-Application requires having a master list report created in Five9.
-Details of report are:  
-  * Folder Name: Shared Reports
-  * Report Name: List Details
+Application requires having a master list details report created in Five9.
+* Listload.html lines 54 and 55 can be set to folder name and report name
 
-Report must have the following filters:
-  * Columns slected in the following order:
-    * first_name, last_name, number1, STATUS, number2, company
-  * Critera:
-    * List selected that will be the master list
-    * Advanvced Filters:
-      * STATUS equals New
-      *  
+* User must have admin API, Contact Record Manager, and Reporting privileges
