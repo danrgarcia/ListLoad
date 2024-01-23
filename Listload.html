@@ -52,8 +52,8 @@
     </body>
     <script>       
 
-        var folderName = "TAM Reports"        
-        var reportName = "MASTER LIST REPORT"
+        var folderName = "Shared Reports"        
+        var reportName = "List Details2"
 
         var listNumbers = [];
         var reportHeaders = [];
@@ -61,7 +61,11 @@
         var removeNumbers = [];
         var selectAll = true;
         var companyLoc;
+        var masterList;
+        var masterListLoc;
         var numberLoc;
+        var firstNameLoc;
+        var lastNameLoc;
         mainArea = document.getElementById('info');
         var successLogin = false;
         var listIdentifier = document.getElementById("lists");
@@ -134,15 +138,15 @@
                 var newNumber = "";
                 console.log(inputs.length)
                 for(var i = 3; i < inputs.length; i++) {
-                    console.log(inputs[i].value)
+                    //console.log(inputs[i].value)
                     if(inputs[i].type == "checkbox") {
-                        inputs[i].checked = true;
+                        inputs[i].checked = true;                        
                     }                
                     //newNumber = inputs[i].value;
                     if (!addNumbers.includes(inputs[i].value)) {
                         addNumbers.push(inputs[i].value);
                 }
-                console.log(addNumbers);
+                //console.log(addNumbers);
             }
             //console.log(addNumbers);
         } 
@@ -273,7 +277,7 @@
         }
 
         async function getReportResult(url, myHeaders, identifierString) {
-            var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">\r\n   <soapenv:Header/>\r\n   <soapenv:Body>\r\n      <ser:getReportResult>\r\n         <!--Optional:-->\r\n         <identifier>${identifierString}</identifier>\r\n      </ser:getReportResult>\r\n   </soapenv:Body>\r\n</soapenv:Envelope>`
+            var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">\r\n   <soapenv:Header/>\r\n   <soapenv:Body>\r\n      <ser:getReportResultCsv>\r\n         <!--Optional:-->\r\n         <identifier>${identifierString}</identifier>\r\n      </ser:getReportResultCsv>\r\n   </soapenv:Body>\r\n</soapenv:Envelope>`
 
             var requestOptions = {
                 method: 'POST',
@@ -299,32 +303,38 @@
             //console.log(json);
             //console.log(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][0]['values']['data'].length);
             //console.log(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][0]);
-            let j = 0;
-            while (j < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'].length) {                
-                reportHeaders.push(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][j]);
-                if (json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][j] == 'company') {
-                    companyLoc = j
+            reportData = json['env:Envelope']['env:Body']['ns2:getReportResultCsvResponse']['return'];
+            var allRows = reportData.split(/\r?\n|\r/);            
+            reportHeaders = allRows[0].split(',')
+            for (var i = 0; i < reportHeaders.length; i++) {
+                if (reportHeaders[i] == 'company') {
+                    companyLoc = i;
                 }
-                if (json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['header']['values']['data'][j] == 'number1') {
-                    numberLoc = j
+                if (reportHeaders[i] == 'LIST NAME') {
+                    masterListLoc = i;
                 }
-                j++;
+                if (reportHeaders[i] == 'number1') {
+                    numberLoc = i;
+                }
+                if (reportHeaders[i] == 'first_name') {
+                    firstNameLoc = i;
+                }
+                if (reportHeaders[i] == 'last_name') {
+                    lastNameLoc = i;
+                }
             }
-            let i = 0;            
-            while (i < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'].length) {
-                var record = [];
-                for (z = 0; z < json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][0]['values']['data'].length; z++) {
-                    record.push(json['env:Envelope']['env:Body']['ns2:getReportResultResponse']['return']['records'][i]['values']['data'][z])
-                }
-                listNumbers.push(record);
-                i++;
-            }            
-            //console.log(listNumbers);
-            return listNumbers, reportHeaders, companyLoc;
+            for (var i = 1; i < allRows.length; i++) {
+                listNumbers.push(allRows[i].split(','));
+            }
+            
+            masterList = listNumbers[0][masterListLoc];
+
+            return listNumbers, reportHeaders, companyLoc
         }
 
         function createTable(numbers, company, reportHeaders, companyLoc) {
-            console.log(removeNumbers);
+            //console.log(removeNumbers);            
+
             console.log("Creating new table");
             addNumbers = [];
             var data = reportHeaders;
@@ -349,8 +359,8 @@
             tr.appendChild(th);
             thead.appendChild(tr);
 
-            table.appendChild(thead);
-                        
+            table.appendChild(thead);                        
+            
             for (var i = 0; i < numbers.length; i++) {
                 //console.log(numbers[i][2])
                 phoneNumber = numbers[i][numberLoc]
@@ -365,10 +375,10 @@
                     var callCheckbox = document.createElement("INPUT");
                     callCheckbox.type = "checkbox";
                     callCheckbox.setAttribute('id', 'row' + i);
-                    callCheckbox.setAttribute('value', phoneNumber);
+                    callCheckbox.setAttribute('value', (phoneNumber + "," + numbers[i][firstNameLoc] + "," + numbers[i][lastNameLoc]));
                     callCheckbox.setAttribute('onclick', 'addToListBulk(this)');
                     
-                    var colCount = 0;
+                    var colCount = 0;                    
                     for (let z = 0; z < numbers[i].length; z++) {
                         if (typeof numbers[i][z] == "object") {
                             tr.cells[z].appendChild(document.createTextNode(""));    
@@ -460,7 +470,7 @@
                 addNumbers.splice(index, 1);
             }
         }
-        //console.log(addNumbers);
+        console.log(addNumbers);
     }
 
     function submitList() { 
@@ -532,12 +542,12 @@
             updateList = updateList + addNumbers[i] + "\n"
         }
 
-        console.log(updateList);
+        //console.log(updateList);
 
         myHeaders2 = new Headers();
         myHeaders2.append("Content-Type", "application/xml");
         myHeaders2.append("Authorization", `Basic ${encodedString}`)
-        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:addToListCsv> <listName>${listName}</listName> <listUpdateSettings> <allowDataCleanup>False</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>               <fieldName>number1</fieldName>               <key>1</key>            </fieldsMapping>            <separator>,</separator>            <skipHeaderLine>False</skipHeaderLine>            <cleanListBeforeUpdate>False</cleanListBeforeUpdate>            <crmAddMode>ADD_NEW</crmAddMode>            <crmUpdateMode>UPDATE_SOLE_MATCHES</crmUpdateMode>            <listAddMode>ADD_ALL</listAddMode>         </listUpdateSettings>         <csvData>${updateList}</csvData>      </ser:addToListCsv>   </soapenv:Body></soapenv:Envelope>`
+        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:addToListCsv> <listName>${listName}</listName> <listUpdateSettings> <allowDataCleanup>False</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>               <fieldName>number1</fieldName>               <key>1</key>            </fieldsMapping> <fieldsMapping>               <columnNumber>2</columnNumber>               <fieldName>first_name</fieldName>               <key>1</key>            </fieldsMapping> <fieldsMapping>               <columnNumber>3</columnNumber>               <fieldName>last_name</fieldName>               <key>1</key>            </fieldsMapping>            <separator>,</separator>            <skipHeaderLine>False</skipHeaderLine>            <cleanListBeforeUpdate>False</cleanListBeforeUpdate>            <crmAddMode>ADD_NEW</crmAddMode>            <crmUpdateMode>UPDATE_SOLE_MATCHES</crmUpdateMode>            <listAddMode>ADD_ALL</listAddMode>         </listUpdateSettings>         <csvData>${updateList}</csvData>      </ser:addToListCsv>   </soapenv:Body></soapenv:Envelope>`
         var requestOptions = {
             method: 'POST',
             headers: myHeaders2,
@@ -561,50 +571,14 @@
             await isImportRunning(url, myHeaders, identifier, re);
             await deleteRecord2(updateList)            
         };
-
-        document.getElementById('listDropdown').removeAttribute("hidden");
-        document.getElementById("btnContainer").removeAttribute("hidden");
-        document.getElementById("compContainer").removeAttribute("hidden");
-        document.getElementById("submitRecords").removeAttribute("hidden");
-        document.getElementById("myTable").removeAttribute("hidden");
-        document.getElementById("loginSection").innerHTML = "";
+        
         updateList = "";
         addNumbers =[];
 
+        await sleep(5000);
+
         main();
-    };
-
-    async function deleteRecord(number) {          
-        console.log("Deleting: " + number);
-        recordsDeleted += 1;
-        myHeaders2 = new Headers();
-        myHeaders2.append("Content-Type", "application/xml");
-        myHeaders2.append("Authorization", `Basic ${encodedString}`)
-        var raw = `<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ser=\"http://service.admin.ws.five9.com/\">   <soapenv:Header/>   <soapenv:Body>      <ser:deleteFromList>                  <listName>Test</listName>                  <listDeleteSettings>            <allowDataCleanup>true</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>                              <fieldName>number1</fieldName>               <key>true</key>            </fieldsMapping>            <listDeleteMode>DELETE_ALL</listDeleteMode>         </listDeleteSettings>         <importData>                     <values>                              <item>${number}</item>            </values>         </importData>      </ser:deleteFromList>   </soapenv:Body></soapenv:Envelope>`
-        var requestOptions = {
-            method: 'POST',
-            headers: myHeaders2,
-            body: raw,
-            redirect: 'follow'
-        }        
-        console.log(requestOptions);
-        console.log(raw);
-        const response = await fetch(url, requestOptions);
-
-        if (!response.ok) {
-            const message = `An error has occured: ${response.status}`;
-
-            throw new Error(message);
-            document.getElementById("loginSection").innerHTML = "ERROR! Please see logs!";
-        } else {
-            listNumbers.pop(addNumbers[i]);            
-        }
-        if (recordsDeleted > 0) {
-            console.log("Pausing while records delete");
-            await sleep(recordsDeleted * 1000);
-            recordsDeleted = 0;
-        }
-    };
+    };    
 
     async function deleteRecord2(numbersToDelete) {
         var listName = listIdentifier.options[listIdentifier.selectedIndex].text;        
@@ -614,7 +588,7 @@
         myHeaders2 = new Headers();
         myHeaders2.append("Content-Type", "application/xml");
         myHeaders2.append("Authorization", `Basic ${encodedString}`)
-        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:deleteFromListCsv> <listName>Test</listName> <listDeleteSettings> <allowDataCleanup>False</allowDataCleanup> <fieldsMapping> <columnNumber>1</columnNumber> <fieldName>number1</fieldName> <key>1</key> </fieldsMapping> <separator>,</separator> <skipHeaderLine>False</skipHeaderLine> <listDeleteMode>DELETE_IF_SOLE_CRM_MATCH</listDeleteMode> </listDeleteSettings> <csvData>${numbersToDelete}</csvData> </ser:deleteFromListCsv> </soapenv:Body> </soapenv:Envelope>`
+        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:deleteFromListCsv> <listName>${masterList}</listName> <listDeleteSettings> <allowDataCleanup>False</allowDataCleanup> <fieldsMapping> <columnNumber>1</columnNumber> <fieldName>number1</fieldName> <key>1</key> </fieldsMapping> <separator>,</separator> <skipHeaderLine>False</skipHeaderLine> <listDeleteMode>DELETE_IF_SOLE_CRM_MATCH</listDeleteMode> </listDeleteSettings> <csvData>${numbersToDelete}</csvData> </ser:deleteFromListCsv> </soapenv:Body> </soapenv:Envelope>`
         var requestOptions = {
             method: 'POST',
             headers: myHeaders2,
