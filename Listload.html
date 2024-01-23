@@ -331,9 +331,18 @@
                 listNumbers.push(allRows[i].split(','));
             }
             
-            masterList = listNumbers[0][masterListLoc];
+            if (listNumbers.length < 2) {
+                noRecords()
+            } else {
+            
+                masterList = listNumbers[0][masterListLoc];
 
-            return listNumbers, reportHeaders, companyLoc
+                return listNumbers, reportHeaders, companyLoc
+            }
+        };
+
+        function noRecords() {
+            document.getElementById("loginSection").innerHTML = "No records on report";
         }
 
         function createTable(numbers, company, reportHeaders, companyLoc) {
