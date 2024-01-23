@@ -408,7 +408,7 @@
                             var callCheckbox = document.createElement("INPUT");
                             callCheckbox.type = "checkbox";
                             callCheckbox.setAttribute('id', 'row' + i);
-                            callCheckbox.setAttribute('value', phoneNumber);
+                            callCheckbox.setAttribute('value', (phoneNumber + "," + numbers[i][firstNameLoc] + "," + numbers[i][lastNameLoc]));
                             callCheckbox.setAttribute('onclick', 'addToListBulk(this)');
                             if (addNumbers.includes(String(phoneNumber))) {
                                 callCheckbox.setAttribute("checked", true);
@@ -493,39 +493,7 @@
         if (response === true) {
             submitRecord2(number);        
         }
-    };
-
-
-    async function submitRecord(number) {
-            document.getElementById('listDropdown').setAttribute("hidden", true);
-            document.getElementById("btnContainer").setAttribute("hidden", true);
-            document.getElementById("compContainer").setAttribute("hidden", true);
-            document.getElementById("submitRecords").setAttribute("hidden", true);
-            document.getElementById("loginSection").innerHTML = "MOVING RECORDS - Please Wait";
-        if (addNumbers.length > 0) {
-            for (var i = 0; i < addNumbers.length; i++) {
-                var text = listIdentifier.options[listIdentifier.selectedIndex].text;
-                tablearea.innerHTML = "";        
-                var requestOptions = {
-                    method: "POST"
-                };
-
-                console.log('Sending number: ' + addNumbers[i])
-                fetch(`https://api.five9.com/web2campaign/AddToList?F9domain=Five9 TAM DEMO - Daniel Garcia&F9key=number1&number1=${addNumbers[i]}&F9list=${text}`, requestOptions)
-                .then(response => response.text())                
-                .catch(error => console.log('error', error));
-
-                await deleteRecord2(addNumbers[i]);
-                removeNumbers.push(addNumbers[i]);
-            }
-        }
-        document.getElementById('listDropdown').removeAttribute("hidden");
-        document.getElementById("btnContainer").removeAttribute("hidden");
-        document.getElementById("compContainer").removeAttribute("hidden");
-        document.getElementById("submitRecords").removeAttribute("hidden");
-        document.getElementById("loginSection").innerHTML = "";
-        filter();
-    };
+    };    
 
     async function submitRecord2(number) {
         document.getElementById('listDropdown').setAttribute("hidden", true);
@@ -547,7 +515,7 @@
         myHeaders2 = new Headers();
         myHeaders2.append("Content-Type", "application/xml");
         myHeaders2.append("Authorization", `Basic ${encodedString}`)
-        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:addToListCsv> <listName>${listName}</listName> <listUpdateSettings> <allowDataCleanup>False</allowDataCleanup>            <fieldsMapping>               <columnNumber>1</columnNumber>               <fieldName>number1</fieldName>               <key>1</key>            </fieldsMapping> <fieldsMapping>               <columnNumber>2</columnNumber>               <fieldName>first_name</fieldName>               <key>1</key>            </fieldsMapping> <fieldsMapping>               <columnNumber>3</columnNumber>               <fieldName>last_name</fieldName>               <key>1</key>            </fieldsMapping>            <separator>,</separator>            <skipHeaderLine>False</skipHeaderLine>            <cleanListBeforeUpdate>False</cleanListBeforeUpdate>            <crmAddMode>ADD_NEW</crmAddMode>            <crmUpdateMode>UPDATE_SOLE_MATCHES</crmUpdateMode>            <listAddMode>ADD_ALL</listAddMode>         </listUpdateSettings>         <csvData>${updateList}</csvData>      </ser:addToListCsv>   </soapenv:Body></soapenv:Envelope>`
+        var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:addToListCsv> <listName>${listName}</listName> <listUpdateSettings> <allowDataCleanup>False</allowDataCleanup> <fieldsMapping> <columnNumber>1</columnNumber> <fieldName>number1</fieldName> <key>1</key> </fieldsMapping> <fieldsMapping><columnNumber>2</columnNumber>               <fieldName>first_name</fieldName>               <key>1</key>            </fieldsMapping> <fieldsMapping>               <columnNumber>3</columnNumber>               <fieldName>last_name</fieldName>               <key>1</key>            </fieldsMapping>            <separator>,</separator>            <skipHeaderLine>False</skipHeaderLine>            <cleanListBeforeUpdate>False</cleanListBeforeUpdate>            <crmAddMode>DONT_ADD</crmAddMode>            <crmUpdateMode>DONT_UPDATE</crmUpdateMode>            <listAddMode>ADD_IF_SOLE_CRM_MATCH</listAddMode>         </listUpdateSettings>         <csvData>${updateList}</csvData>      </ser:addToListCsv>   </soapenv:Body></soapenv:Envelope>`
         var requestOptions = {
             method: 'POST',
             headers: myHeaders2,
@@ -581,6 +549,7 @@
     };    
 
     async function deleteRecord2(numbersToDelete) {
+        console.log(numbersToDelete);
         var listName = listIdentifier.options[listIdentifier.selectedIndex].text;        
 
         //console.log(numbersToDelete);
