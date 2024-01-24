@@ -25,17 +25,22 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" value="" class="form-control">
                 <input type="button" id="loginBtn" class="btn btn-primary" value="Login" onclick="app()">
-                <input type="button" id="logoutBtn" class="btn btn-danger" value="Logout" onclick="location.reload();" hidden>
+                <input type="button" id="logoutBtn" class="btn btn-warning" value="Logout" onclick="location.reload();" hidden>
             </form>
         </div>
         <div id="loginSection"></div>
+        <div class="listSection">
         <div id="listDropdown" hidden>
-            <label for ="lists">Choose a campaign to add to:</label>
+            <label for ="lists">Choose a list to add to:</label>
             <select name="lists" id="lists"></select>            
         </div>
+        <div id="clearList" hidden>
+            <button onclick="clearList()" class="btn btn-danger">Clear Selected List</button>
+        </div>
+    </div>
         <br>
         <div id="compContainer" hidden>
-            <label for="company">Company Title: </label>
+            <label for="company">Filter Company Title: </label>
             <select name="company" id="company" onchange="filter()"></select>
         </div>
         <br>
@@ -44,7 +49,7 @@
         </div>
         <br>
         <div id="submitRecords" hidden>
-            <button onclick="submitList()" class="btn btn-secondary">Add records to campaign</button>            
+            <button onclick="submitList()" class="btn btn-secondary">Add records to list</button>            
         </div>
         <br>
         <div id="container" style="width:100%;overflow:auto;"></div>        
@@ -52,8 +57,8 @@
     </body>
     <script>       
 
-        var folderName = "TAM Reports"        
-        var reportName = "MASTER LIST REPORT"
+        var folderName = "Shared Reports"        
+        var reportName = "List Details2"
 
         var listNumbers = [];
         var reportHeaders = [];
@@ -132,6 +137,35 @@
                 //console.log(reportHeaders);
             filter()
             }
+
+        async function clearList() {
+            var newList = listIdentifier.options[listIdentifier.selectedIndex].text;
+            const response = confirm(`Are you sure you want to clear ${newList}?`);
+            console.log(response);
+            if (response === true) {
+                var raw = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/"> <soapenv:Header/> <soapenv:Body> <ser:addToListCsv> <listName>${newList}</listName> <listUpdateSettings> <allowDataCleanup>False</allowDataCleanup> <fieldsMapping> <columnNumber>1</columnNumber> <fieldName>number1</fieldName> <key>1</key> </fieldsMapping> <separator>,</separator> <skipHeaderLine>False</skipHeaderLine> <cleanListBeforeUpdate>1</cleanListBeforeUpdate> <crmAddMode>DONT_ADD</crmAddMode> <crmUpdateMode>DONT_UPDATE</crmUpdateMode> <listAddMode>ADD_IF_SOLE_CRM_MATCH</listAddMode> </listUpdateSettings> <csvData>5555555555</csvData> </ser:addToListCsv> </soapenv:Body></soapenv:Envelope>`
+                console.log(raw);
+                var requestOptions = {
+                    method: 'POST',
+                    headers: myHeaders,
+                    body: raw,
+                    redirect: 'follow'
+                };
+            
+                try {
+                    const response = await fetch(url, requestOptions);
+                    if (response.status === 401) {
+                        throw new Error('Unauthorized Access');
+                    } else if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const success = await response.text();
+                } catch (error) {                    
+                    console.error(error);
+                }
+            }
+            main();
+        }
 
         function addAll() {
             document.getElementById("btnContainer").onclick = function() {
@@ -449,6 +483,7 @@
             tablearea.appendChild(table); 
             
             document.getElementById("listDropdown").removeAttribute("hidden");
+            document.getElementById("clearList").removeAttribute("hidden");
             document.getElementById("btnContainer").removeAttribute("hidden");
             document.getElementById("compContainer").removeAttribute("hidden");
             document.getElementById("submitRecords").removeAttribute("hidden");
@@ -510,6 +545,7 @@
 
     async function submitRecord2(number) {
         document.getElementById('listDropdown').setAttribute("hidden", true);
+        document.getElementById('clearList').setAttribute("hidden", true);
         document.getElementById("btnContainer").setAttribute("hidden", true);
         document.getElementById("compContainer").setAttribute("hidden", true);
         document.getElementById("submitRecords").setAttribute("hidden", true);
